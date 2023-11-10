@@ -34,7 +34,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+      - name: Generate Tag
+        id: image-tag
+        run: |
+          tags=$(curl -s https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r '.tag_name')
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo $tags > release-tag.txt
+      - name: Download tag name artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: release-tag
+      - name: Compare Release Tag
+        shell: bash
+        run: |
+          old_tag=`cat release-tag.txt`
+          if [ ${{ steps.image-tag.outputs.tags }} = $old_tag ]; then
+            echo "No new tag"
+            exit 1
+          fi
+          
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -68,11 +86,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Generate Tag
-        id: image-tag
-        run: |
-          tags=$(curl -s https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r '.tag_name')
-          echo "tags=$tags" >> "$GITHUB_OUTPUT"
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
@@ -100,3 +113,10 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-tag
+          path: release-tag.txt
+          retention-days: 100
