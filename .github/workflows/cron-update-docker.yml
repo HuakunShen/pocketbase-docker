@@ -40,19 +40,23 @@ jobs:
           tags=$(curl -s https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r '.tag_name')
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo $tags > release-tag.txt
-      - name: Download tag name artifact
-        uses: actions/download-artifact@v3
+      - uses: actions/cache@v3
         with:
-          name: release-tag
+          path: |
+            ~/version-cache/
+          key: pocketbase-version-cache
       - name: Compare Release Tag
         shell: bash
         run: |
-          old_tag=`cat release-tag.txt`
+          old_tag=`cat ~/version-cache/release-tag.txt`
           if [ ${{ steps.image-tag.outputs.tags }} = $old_tag ]; then
             echo "No new tag"
             exit 1
           fi
-          
+      - name: Save Cache
+        shell: bash
+        run: |
+          echo ${{ steps.image-tag.outputs.tags }} > ~/version-cache/release-tag.txt
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -114,9 +118,3 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
       
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-tag
-          path: release-tag.txt
-          retention-days: 100
