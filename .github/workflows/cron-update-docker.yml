@@ -7,7 +7,7 @@ name: Update Docker Image
 
 on:
   schedule:
-    - cron: '34 6 * * *'
+    - cron: '0 6 * * *'
   push:
     branches: [ "main", "dev" ]
     # Publish semver tags as releases.
