@@ -61,6 +61,7 @@ jobs:
         if: steps.compare-tag.outputs.same_version != 'ture'
         shell: bash
         run: |
+          mkdir ~/version-cache
           echo ${{ steps.image-tag.outputs.tags }} > ~/version-cache/release-tag.txt
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
