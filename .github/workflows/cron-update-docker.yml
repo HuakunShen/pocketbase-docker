@@ -46,14 +46,19 @@ jobs:
             ~/version-cache/
           key: pocketbase-version-cache
       - name: Compare Release Tag
+        id: compare-tag
         shell: bash
         run: |
-          old_tag=`cat ~/version-cache/release-tag.txt`
-          if [ ${{ steps.image-tag.outputs.tags }} = $old_tag ]; then
-            echo "No new tag"
-            exit 1
+          # check if file exists
+          if [ -f ~/version-cache/release-tag.txt ]; then
+            old_tag=`cat ~/version-cache/release-tag.txt`
+            if [ ${{ steps.image-tag.outputs.tags }} = $old_tag ]; then
+              echo "No new tag"
+              echo "same_version=ture" >> "$GITHUB_OUTPUT"
+            fi
           fi
       - name: Save Cache
+        if: steps.compare-tag.outputs.same_version != 'ture'
         shell: bash
         run: |
           echo ${{ steps.image-tag.outputs.tags }} > ~/version-cache/release-tag.txt
@@ -69,6 +74,7 @@ jobs:
       # multi-platform images and export cache
       # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
+        if: steps.compare-tag.outputs.same_version != 'ture'
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
@@ -86,6 +92,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
+        if: steps.compare-tag.outputs.same_version != 'ture'
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -94,6 +101,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
+        if: steps.compare-tag.outputs.same_version != 'ture'
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
@@ -109,7 +117,7 @@ jobs:
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' }} && steps.compare-tag.outputs.same_version != 'ture'
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}
