@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+  pocketbase:
+    image: huakunshen/pocketbase:v0.19.3
+    container_name: pocketbase
+    restart: unless-stopped
+    ports:
+      - 8090:8090
+    volumes:
+      - pocketbase-data:/pocketbase/pb_data
+
+volumes:
+  pocketbase-data:

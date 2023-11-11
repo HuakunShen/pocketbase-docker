@@ -55,3 +55,29 @@ If there is a new release, the CI will build again with the new release tag auto
 [./.github/workflows/cron-update-docker.yml](./.github/workflows/cron-update-docker.yml) caches a file containing the previous tag version, and compare with the current tag.
 
 If the tag is unchanged, then all steps will be skipped. `actions/cache@v3` is used for caching, although it's usually used for caching large dependencies like Rust's `target` and `node_modules`.
+
+
+## Usage
+
+```bash
+docker run -p 8090:8090 huakunshen/pocketbase:v0.19.3
+```
+
+### docker-compose
+
+```yaml
+version: '3.9'
+
+services:
+  pocketbase:
+    image: huakunshen/pocketbase:v0.19.3
+    container_name: pocketbase
+    restart: unless-stopped
+    ports:
+      - 8090:8090
+    volumes:
+      - pocketbase-data:/pocketbase/pb_data
+
+volumes:
+  pocketbase-data:
+```
