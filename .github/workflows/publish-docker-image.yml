@@ -7,7 +7,7 @@ name: Publish Docker
 
 on:
   schedule:
-    - cron: "27 15 * * *"
+    - cron: '0 6 * * *'
   push:
     branches: ["main"]
     # Publish semver tags as releases.
@@ -40,7 +40,8 @@ jobs:
           tags=$(curl -s https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r '.tag_name')
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo $tags > release-tag.txt
-      - uses: actions/cache@v3
+      - name: Version Cache
+        uses: actions/cache@v3
         with:
           path: |
             ~/version-cache/
@@ -115,7 +116,7 @@ jobs:
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }} && steps.compare-tag.outputs.same_version != 'ture'
+        if: ${{ github.event_name != 'pull_request' }} && ${{ steps.compare-tag.outputs.same_version != 'ture' }}
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}
